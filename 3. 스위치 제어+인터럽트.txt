@@ -1,0 +1,70 @@
+/*
+스위치 누르면 모든 led를 on/off 반복
+*/
+
+#include "LPC1768_utility.h"
+#include "LPC1768_fnd.h"
+
+int main (void) 
+{
+	uint32_t Button_Status = 0;
+	Led_Init(LED_ALL);
+	GPIO_SetDir(GPIO_PORT_2, (1<<10), INPUT); 	
+        
+	while(1)
+  	{
+		Button_Status = (GPIO_ReadValue(GPIO_PORT_2) & (1<<10));
+		if(Button_Status == 0)	//	INT Button
+		{
+			Led_All_On();	
+		}
+		else //	INT Button 
+		{
+			Led_All_Off();
+		}
+	}
+}
+
+
+
+
+
+/*
+스위치 인터럽트 사용하여 LED 제어
+
+EINT를 이용한 LED 순차 점등
+예제 1은 인터럽트가 발생할 때 마다 GPIO 포트2에 연결되어 있는 5개의 LED가 순차적으로 점등된다.
+최초 실행 시 LED3이 켜지고 
+스위치를 눌러 인터럽트가 발생하면 LED3→LED4→LED5→LED6→LED7→LED3..의 순서로 점등되는 동작을 반복한다.
+*/
+
+
+#include "LPC1768_utility.h"
+#include "LPC1768_fnd.h"
+uint8_t Led_Count=1;
+
+int main (void) 
+{
+	EXTI_Init();
+	Led_Init(LED_ALL); // LED ?? ??? 
+	AF_ConfigPin(GPIO_PORT_2,PINSEL_PIN_10, PINSEL_FUNC_1);
+	EXTI_ConfigPin(EXTI_EINT0);//Falling Edge mode
+	NVIC_EnableIRQ(EINT0_IRQn);
+	
+	while(1)
+  	{
+		Delay(SEC_1/10);		
+		if(Led_Count > 8)	//	INT Button? ??? ?
+		{
+			Led_Count=1;
+		}
+		Led_On(Led_Count);	// ?? LED? ??.
+	}
+}
+
+void EINT0_IRQHandler(void)
+{
+	EXTI_ClearEXTIFlag(EXTI_EINT0);
+	Led_Count++;
+	Led_All_Off();
+}

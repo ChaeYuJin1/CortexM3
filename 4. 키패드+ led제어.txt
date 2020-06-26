@@ -1,0 +1,198 @@
+/*
+키패트 입력받으면 led 순차적으로 on
+*/
+
+#include "LPC17xx.H"
+#include "LED.H"
+#include "LPC1768_utility.H"
+#include "LPC1768_fnd.H"
+#include "Keypad.H"
+
+void Keypad_test(){
+  uint8_t Keypad_Value=0;
+  Keypad_Value = Keypad('C');
+  if (Keypad_Value & 0x01) LPC_GPIO2->FIOPIN |= (1<<6); // LED 1 ON 			//LCP대신에 Led_On(8);
+  else LPC_GPIO2->FIOPIN &= ~(1<<6);							//LCP대신에 Led_Off(8);
+  if (Keypad_Value >> 1 & 0x01 ) LPC_GPIO2->FIOPIN |= (1<<5); // LED 2 ON
+  else LPC_GPIO2->FIOPIN &= ~(1<<5);
+  if (Keypad_Value >> 2 & 0x01 ) LPC_GPIO2->FIOPIN |= (1<<4); // LED 3 ON
+  else LPC_GPIO2->FIOPIN &= ~(1<<4);
+  if (Keypad_Value >> 3 & 0x01 ) LPC_GPIO2->FIOPIN |= (1<<3); // LED 4 ON
+  else LPC_GPIO2->FIOPIN &= ~(1<<3);
+  if (Keypad_Value >> 4 & 0x01 ) LPC_GPIO2->FIOPIN |= (1<<2); // LED 5 ON
+  else LPC_GPIO2->FIOPIN &= ~(1<<2);
+  if (Keypad_Value >> 5 & 0x01 ) LPC_GPIO1->FIOPIN |= (1UL<<31); // LED 6 ON
+  else LPC_GPIO1->FIOPIN &= ~(1UL<<31);
+  if (Keypad_Value >> 6 & 0x01 ) LPC_GPIO1->FIOPIN |= (1<<29); // LED 7 ON
+  else LPC_GPIO1->FIOPIN &= ~(1<<29);
+  if (Keypad_Value >> 7 & 0x01 ) LPC_GPIO1->FIOPIN |= (1<<28); // LED 8 ON
+  else LPC_GPIO1->FIOPIN &= ~(1<<28);
+}
+	
+int main (void) {                       /* Main Program                       */	
+  SystemInit();
+  LED_init();
+  EXT_IO_init();
+  Keypad_DIR_Input();	   			/* Keypad direction = input */
+
+  for (;;) {    /* Loop forever                       */
+		Keypad_test();
+  }
+}
+
+
+
+
+
+/*
+입력으로 들어온 키패드의 위치를 led를 이용해 표현
+*/
+
+
+#include "LPC17xx.H"
+#include "LED.H"
+#include "LPC1768_utility.H"
+#include "LPC1768_fnd.H"
+#include "Keypad.H"
+
+uint8_t Keypad_Value=0;
+
+void Keypad_test(){
+
+	Keypad_DIR_Input();
+  	Keypad_Value = Keypad('C');
+	
+	Led_On(8-(Keypad_Value%4));
+	Led_On(4-(Keypad_Value/4));
+	Delay(5000);
+	Led_Off(8-(Keypad_Value%4));
+	Led_Off(4-(Keypad_Value/4));
+}
+	
+int main (void) {                       /* Main Program                       */	
+  SystemInit();
+  Led_Init(LED_ALL);
+  EXT_IO_init();
+
+  for (;;) {    /* Loop forever                       */
+		Keypad_test();
+  }
+}
+
+
+
+
+
+/*
+키패드 16개를 00~15로 표현하여 FND에 표현
+*/
+
+#include "LPC17xx.H"
+#include "LED.H"
+#include "LPC1768_utility.H"
+#include "LPC1768_fnd.H"
+#include "Keypad.H"
+
+void clear()
+{
+	LPC_GPIO0->FIOPIN &=~(1<<4);
+	LPC_GPIO0->FIOPIN &=~(1<<23);
+	LPC_GPIO0->FIOPIN &=~(1<<24);
+	LPC_GPIO3->FIOPIN &=~(1<<25);
+	LPC_GPIO3->FIOPIN &=~(1<<26);
+	LPC_GPIO0->FIOPIN &=~(1<<5);
+	LPC_GPIO0->FIOPIN &=~(1<<10);
+	LPC_GPIO2->FIOPIN &=~(1<<12);
+	LPC_GPIO2->FIOPIN &=~(1<<13);
+}
+
+void Keypad_test()
+{
+	uint8_t Keypad_Value = 0;
+	Keypad_DIR_Input();
+	Keypad_Value = Keypad('C');
+	Delay(5000);
+	clear();
+	EXT_IO_B_CS();
+	FND_Init();
+	FND_COM_DATA_Select(8,Keypad_Value%10);
+	Delay(5000);
+	FND_COM_DATA_Select(7,Keypad_Value/10);
+}
+
+int main(void)
+{
+	SystemInit();
+	Led_Init(LED_ALL);
+	EXT_IO_init();
+
+	for(;;)
+	{
+		Keypad_test();
+	}
+}
+
+
+
+
+
+
+/*
+스위치 누르면 FND의 숫자를 증가시키기.
+*/
+
+#include "LPC1768_utility.h"
+#include "LPC1768_fnd.h"
+
+  int i=0;
+  int j=0; 
+	
+int main (void) 
+{
+	EXTI_Init();  FND_Init(); FND_COM_Init();
+
+	AF_ConfigPin(GPIO_PORT_2, PINSEL_PIN_10, PINSEL_FUNC_1);
+	//EXTI_ConfigPin(EXTI_EINT0);
+	LPC_SC->EXTMODE = 0x0;
+	LPC_SC->EXTPOLAR = 0x0;
+	NVIC_EnableIRQ(EINT0_IRQn);
+
+
+
+	while (1)
+	{
+			FND_COM_DATA_Select(5, (j/(10*10*10)%10));
+			Delay(5000);
+			FND_COM_DATA_Select(6, (j/(10*10)%10));
+			Delay(5000);
+			FND_COM_DATA_Select(7, (j/10)%10);
+			Delay(5000);
+			FND_COM_DATA_Select(8, j%10);
+			Delay(5000);
+			if(j>0) 
+      {
+         j--;
+      }   
+	}
+}
+
+
+void EINT0_IRQHandler(void)
+{
+	EXTI_ClearEXTIFlag(EXTI_EINT0);
+
+			FND_COM_DATA_Select(8, j%10);
+			Delay(5000);
+			FND_COM_DATA_Select(7, (j/10)%10);
+			Delay(5000);
+			FND_COM_DATA_Select(6, (j/(10*10)%10));
+			Delay(5000);
+			FND_COM_DATA_Select(5, (j/(10*10*10)%10));
+			Delay(5000);
+
+				if(j<9999)
+				{ 
+					j++;
+				}
+ 
+}

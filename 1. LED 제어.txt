@@ -1,0 +1,81 @@
+/* 모든 led를 on, off 반복*/
+
+#include "LPC1768_utility.h"
+
+int main(void)
+{   
+   Led_Init(LED_ALL);
+   
+   while(1)
+   {
+      Led_All_On();
+      Delay(SEC_1); // Delay 1 sec 
+      Led_All_Off();      
+      Delay(SEC_2); // Dealy 1 sec 
+   }
+}
+
+
+
+
+
+/* 8개의 led를 순차적으로 shift */
+
+
+#include "LPC1768_utility.h"
+
+int main(void)
+{   
+	 uint8_t Led_Count = 0;
+   uint8_t Led_Status = 0;
+	
+   Led_Init(LED_ALL);
+   
+   while(1)
+   {
+			if(Led_Count == 1)	Led_Status =0;
+			if(Led_Count == 8)	Led_Status =1;
+		 
+			if(Led_Status ==1)
+			{
+					Led_Count--;
+					Led_On(Led_Count);
+					Delay(SEC_1/5);
+					Led_Off(Led_Count);
+			}
+			else if(Led_Status ==0)
+			{
+					Led_Count++;
+					Led_On(Led_Count);
+					Delay(SEC_1/5);
+					Led_Off(Led_Count);
+			}
+  }
+}
+
+
+#include "LPC1768_utility.h"
+
+int main(void)
+{   
+		uint8_t Led_Count_S = 1;
+		uint8_t Led_Count_F = 8;
+		Led_Init(LED_ALL);
+   
+   while(1)
+   {
+			for(int i=Led_Count_S; i<=Led_Count_F;i++)
+		  {
+					Led_On(i);
+					Delay(SEC_1/5);
+					Led_Off(i);
+			}
+			for(int i=Led_Count_F; i>=Led_Count_S;i--)
+		  {
+					Led_On(i);
+					Delay(SEC_1/5);
+					Led_Off(i);
+			}
+
+  }
+}
